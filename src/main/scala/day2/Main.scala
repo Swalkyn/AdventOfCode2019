@@ -19,21 +19,23 @@ object Main extends App {
             case _ => throw new IllegalArgumentException("Unknown error")
         }
 
+    /*
+    This version of run might be easier to understand, but is less elegant in my opinion
+
     def run(mem: List[Int], start: Int): Int = 
         exec(mem, mem.splitAt(start)._2) match {
             case (true, newMem) => run(newMem, start+4)
             case (false, _) => mem(0)
         }
-    
-    // Faster
-    def run2(mem: List[Int]) = 
+    */
+    def run(mem: List[Int]) = 
         mem
             .sliding(4, 4)
             .foldLeft((true, mem))((state, i) => if (state._1) exec(state._2, i) else state)
             ._2(0)
 
     def runWith(mem: List[Int], noun: Int, verb: Int): Int =
-        run2(mem.updated(1, noun).updated(2, verb))
+        run(mem.updated(1, noun).updated(2, verb))
     
     def findInputsFor(mem: List[Int], result: Int) = {
         def diagGridSearch(noun: Int, total: Int): (Int, Int) =
@@ -45,8 +47,6 @@ object Main extends App {
     }
 
     val memory = input.map(_.toInt).toList
-
-    println(run2(testInput))
 
     // Part 1
     println(runWith(memory, 12, 2))
