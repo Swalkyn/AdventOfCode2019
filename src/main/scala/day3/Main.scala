@@ -23,6 +23,7 @@ object Main extends App {
     case class Line(val s: Coord, val e: Coord, val o: Orientation, p: Int) {
         val path = p + distance(s, e)
 
+        // This horrible function makes me really regret my design choices of not having modeled individual points...
         def intersect = (other: Line) =>
              ((((this.s._1 <= other.s._1 && other.s._1 <= this.e._1) || (this.e._1 <= other.s._1 && other.s._1 <= this.s._1)) 
             || ((this.s._1 <= other.e._1 && other.e._1 <= this.e._1) || (this.e._1 <= other.e._1 && other.e._1 <= this.s._1))) 
