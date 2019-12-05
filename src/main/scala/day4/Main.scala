@@ -4,9 +4,9 @@ object Main extends App {
     val input = (172930 to 683082)
     
     def hasIncreasingDigits(n: Int): Boolean = 
-    if (n < 10) true
-    else if ((n % 10) < (n / 10) % 10) false
-    else hasIncreasingDigits(n / 10)
+        if (n < 10) true
+        else if ((n % 10) < (n / 10) % 10) false
+        else hasIncreasingDigits(n / 10)
     
     def twoNotThree(s: String): Boolean =
         s(0) == s(1) && s(1) != s(2)
