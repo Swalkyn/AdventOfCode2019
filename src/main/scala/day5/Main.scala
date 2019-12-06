@@ -57,15 +57,15 @@ object IntCode {
         val op = 7
         val nParams = 3
         override def exec = (mem: Memory, ps: List[Int], accs: List[Int]) =>
-            if (valByAccess(mem, ps(0), accs(0)) < valByAccess(mem, ps(1), accs(1))) mem.updated(valByAccess(mem, ps(2), accs(2)), 1)
-            else mem.updated(valByAccess(mem, ps(2), accs(2)), 0)
+            if (valByAccess(mem, ps(0), accs(0)) < valByAccess(mem, ps(1), accs(1))) mem.updated(ps(2), 1)
+            else mem.updated(ps(2), 0)
     }
     case object Equals extends Instruction { 
         val op = 8
         val nParams = 3
         override def exec = (mem: Memory, ps: List[Int], accs: List[Int]) =>
-            if (valByAccess(mem, ps(0), accs(0)) == valByAccess(mem, ps(1), accs(1))) mem.updated(valByAccess(mem, ps(2), accs(2)), 1)
-            else mem.updated(valByAccess(mem, ps(2), accs(2)), 0)
+            if (valByAccess(mem, ps(0), accs(0)) == valByAccess(mem, ps(1), accs(1))) mem.updated(ps(2), 1)
+            else mem.updated(ps(2), 0)
     }
     case object Halt extends Instruction {
         val op = 99
@@ -92,8 +92,8 @@ object Main extends App {
         val params = memoryAtHead.tail.take(instr.nParams)
         val accesses = (0 until instr.nParams).map(n => getDigitAt(opcode, n + 2)).toList
 
-        //println(f"Head at addr ${head}")
-        println(f"Instruction: ${instr}, params: ${params}, accesses: ${accesses}")
+        // println(f"Head at addr ${head}")
+        // println(f"Instruction: ${instr}, params: ${params}, accesses: ${accesses}")
 
         instr.apply(mem, head, params, accesses)
     }
@@ -107,13 +107,11 @@ object Main extends App {
 
     val memory: Memory = input.map(_.toInt).toList
     val testMemory: Memory = List(
-        3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
-        1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
-        999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99
+        3,9,8,9,10,9,4,9,99,-1,8
     )
 
     // Part 1
-    run((testMemory, 0))
+    run((memory, 0))
 
     // Part 2
 }
