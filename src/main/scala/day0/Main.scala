@@ -33,7 +33,7 @@ class Instance(init: Iterator[String], size: Int) {
     }
 
     def tileTick(region: List[Tile]): Tile = {
-        val count = region.groupBy(identity).mapValues(_.size).withDefaultValue(0)
+        val count = region.groupBy(identity).withDefaultValue(List()).mapValues(_.size)
         region(4) match {
             case Open => if (count(Tree) >= 3) Tree else Open
             case Tree => if (count(Lumb) >= 3) Lumb else Tree
@@ -54,7 +54,7 @@ class Instance(init: Iterator[String], size: Int) {
         def runAndValueHelper(ticks: Int, f: Field, values: List[Int]): List[Int] = {
             if (ticks > 0) {
                 val newTiles = tick(f)
-                val count = newTiles.flatten.groupBy(identity).mapValues(_.size).withDefaultValue(0)
+                val count = newTiles.flatten.groupBy(identity).withDefaultValue(List()).mapValues(_.size)
                 runAndValueHelper(ticks - 1, newTiles, count(Tree) * count(Lumb) :: values)
             }
             else values.reverse
@@ -70,7 +70,7 @@ object Main extends App {
     val solution = problem.run(10000)
     println(solution.map(_.mkString).mkString("\n"))
 
-    val count = solution.flatten.groupBy(identity).mapValues(_.size).withDefaultValue(0)
+    val count = solution.flatten.groupBy(identity).withDefaultValue(List()).mapValues(_.size)
     println(count(Tree) * count(Lumb))
 
     println(problem.runAndValue(1000))
