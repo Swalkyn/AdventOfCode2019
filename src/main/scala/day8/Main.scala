@@ -14,7 +14,7 @@ object Main extends App {
         2 -> ' '
     )
 
-    val layers = input.sliding(pixels, pixels).toList
+    val layers = input.grouped(pixels).toList
         
     // Part 1
     val mostZeroes = layers
@@ -32,6 +32,6 @@ object Main extends App {
         (acc, layer) => (acc zip layer).map{ case(above, below) => if (above == 2) below else above }
     )
 
-    val part2 = stacked.map(printMap(_)).sliding(w, w).map(_.mkString)
+    val part2 = stacked.map(printMap(_)).grouped(w).map(_.mkString)
     part2.foreach(println)
 }
