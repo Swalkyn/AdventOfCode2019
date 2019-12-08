@@ -9,9 +9,9 @@ object Main extends App {
     val (w, h) = (25, 6)
     val pixels = w*h
     val printMap = Map(
-        0 -> '#',
-        1 -> '.',
-        2 -> ' '
+        0 -> ' ',
+        1 -> '█',
+        2 -> '~'
     )
 
     val layers = input.grouped(pixels).toList
