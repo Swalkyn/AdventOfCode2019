@@ -3,6 +3,13 @@ package intcode
 import scala.io.Source
 import scala.io.StdIn
 
+/*
+Possible improvements
+ - use a map for the memory, for faster updates
+ - use a lazylist with unfold instead of cycle
+ - redesign IO
+*/
+
 object IntCode {
     type Memory = List[Int]
     type PC = Int
@@ -138,6 +145,5 @@ object Main extends App {
     val testMemory = List(
         3,9,8,9,10,9,4,9,99,-1,8
     )
-
     println(IntCode.runUntilHalt(IntCode.getStateFor(memory, in=List(5))))
 }
