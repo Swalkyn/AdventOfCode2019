@@ -100,30 +100,30 @@ object IntCode {
         
         instr(params)
     } 
-    def cycle(initialState: State, stopCondition: State => Boolean): State ={
-        def cycleHelper: State => State = {
+    def run(initialState: State, stop: State => Boolean): State ={
+        def runHelper: State => State = {
             case state @ State(mem, head, in, out) => 
-                if (!stopCondition(state)) {
+                if (!stop(state)) {
                     val decodedInstr = decode(mem.drop(head))
                     val newState = decodedInstr(state)
-                    cycleHelper(newState)
+                    runHelper(newState)
                 }
                 else state
         }
 
-        cycleHelper(initialState)
+        runHelper(initialState)
     }
     def untilHalt = (s: State) => s.head < 0
 
-    def runUntil(mem: Memory, head: Int = 0, in: IO = List(), stopCondition: State => Boolean): State =
-        cycle(State(mem, head, in, List()), stopCondition)
+    def runUntilHalt(s: State): State =
+        run(s, untilHalt)
     
-    def run(mem: Memory, head: Int = 0, in: IO = List()) =
-        runUntil(mem, head, in, untilHalt)
+    def runUntilOutput(s: State) =
+        run(s, (s: State) => untilHalt(s) || !s.out.isEmpty)
     
-    def runUntilOutput(mem: Memory, head: Int = 0, in: IO = List()) =
-        runUntil(mem, head, in, (s: State) => untilHalt(s) || !s.out.isEmpty)
-
+    def getStateFor(mem: Memory, head: PC = 0, in: IO = List()) =
+        State(mem, head, in, List())
+        
     val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, Halt)
     val opcodeMap = supportedInstr.map((i: Instruction) => (i.op, i)).toMap//.withDefault(throw new IllegalArgumentException("Unknown opcode"))
 }
@@ -139,5 +139,5 @@ object Main extends App {
         3,9,8,9,10,9,4,9,99,-1,8
     )
 
-    println(IntCode.run(memory, in=List(5)))
+    println(IntCode.runUntilHalt(IntCode.getStateFor(memory, in=List(5))))
 }
