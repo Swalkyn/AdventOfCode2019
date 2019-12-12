@@ -34,74 +34,74 @@ object IntCode {
             case _ => throw new IllegalArgumentException
         }
 
-        def apply(p: List[Parameter])(s: State): Option[State] =
-                halted(State(exec(p)(s), moveHead(p)(s), moveRBase(p)(s), input(p)(s), output(p)(s)))
+        def apply(s: State, p: List[Parameter]): Option[State] =
+            halted(State(exec(s, p), moveHead(s, p), moveRBase(s, p), input(s, p), output(s, p)))
         
         def halted(s: State): Option[State] = Some(s)
-        def exec(p: List[Parameter])(s: State): Memory = s.mem
-        def moveHead(p: List[Parameter])(s: State): PC = s.head + nParams + 1
-        def moveRBase(p: List[Parameter])(s: State): PC = s.rel
-        def input(p: List[Parameter])(s: State): LazyList[Long] = s.in
-        def output(p: List[Parameter])(s: State): Option[Long] = None
+        def exec(s: State, p: List[Parameter]): Memory = s.mem
+        def moveHead(s: State, p: List[Parameter]): PC = s.head + nParams + 1
+        def moveRBase(s: State, p: List[Parameter]): PC = s.rel
+        def input(s: State, p: List[Parameter]): LazyList[Long] = s.in
+        def output(s: State, p: List[Parameter]): Option[Long] = None
     }
     case object Addition extends Instruction { 
         val op = 1
         val nParams = 3
-        override def exec(p: List[Parameter])(s: State) =
+        override def exec(s: State, p: List[Parameter]) =
             s.mem.updated(writeAccess(s, p(2)), readAccess(s, p(0)) + readAccess(s, p(1)))
     }
     case object Multiplication extends Instruction { 
         val op = 2
         val nParams = 3
-        override def exec(p: List[Parameter])(s: State) =
+        override def exec(s: State, p: List[Parameter]) =
             s.mem.updated(writeAccess(s, p(2)), readAccess(s, p(0)) * readAccess(s, p(1)))
     }
     case object Input extends Instruction {
         val op = 3
         val nParams = 1
-        override def exec(p: List[Parameter])(s: State) =
+        override def exec(s: State, p: List[Parameter]) =
             s.mem.updated(writeAccess(s, p.head), s.in.applyOrElse(0, (i: Int) => { println("Input needed:"); StdIn.readInt() }))
-        override def input(p: List[Parameter])(s: State): LazyList[Long] =
+        override def input(s: State, p: List[Parameter]): LazyList[Long] =
             if (s.in.isEmpty) s.in else s.in.tail
     }
     case object Output extends Instruction {
         val op = 4
         val nParams = 1
-        override def output(p: List[Parameter])(s: State) =
+        override def output(s: State, p: List[Parameter]) =
             Some(readAccess(s, p.head))
     }
     case object JumpIfTrue extends Instruction { 
         val op = 5
         val nParams = 2
-        override def moveHead(p: List[Parameter])(s: State) = 
+        override def moveHead(s: State, p: List[Parameter]) = 
             if (readAccess(s, p(0)) != 0) readAccess(s, p(1))
-            else super.moveHead(p)(s)
+            else super.moveHead(s, p)
     }
     case object JumpIfFalse extends Instruction { 
         val op = 6
         val nParams = 2
-        override def moveHead(p: List[Parameter])(s: State) = 
+        override def moveHead(s: State, p: List[Parameter]) = 
             if (readAccess(s, p(0)) == 0) readAccess(s, p(1))
-            else super.moveHead(p)(s)
+            else super.moveHead(s, p)
     }
     case object LessThan extends Instruction { 
         val op = 7
         val nParams = 3
-        override def exec(p: List[Parameter])(s: State) =
+        override def exec(s: State, p: List[Parameter]) =
             if (readAccess(s, p(0)) < readAccess(s, p(1))) s.mem.updated(writeAccess(s, p(2)), 1)
             else s.mem.updated(writeAccess(s, p(2)), 0)
     }
     case object Equals extends Instruction { 
         val op = 8
         val nParams = 3
-        override def exec(p: List[Parameter])(s: State) =
+        override def exec(s: State, p: List[Parameter]) =
             if (readAccess(s, p(0)) == readAccess(s, p(1))) s.mem.updated(writeAccess(s, p(2)), 1)
             else s.mem.updated(writeAccess(s, p(2)), 0)
     }
     case object RBase extends Instruction {
         val op = 9
         val nParams = 1
-        override def moveRBase(p: List[Parameter])(s: State) = 
+        override def moveRBase(s: State, p: List[Parameter]) = 
             s.rel + readAccess(s, p.head)
     }
     case object Halt extends Instruction {
@@ -122,7 +122,7 @@ object IntCode {
         
         // println(f"Instruction: ${instr}, params: ${params}")
         
-        instr(params)(s)
+        instr(s, params)
     }
 
     def run(initialState: State): LazyList[Long] = {
