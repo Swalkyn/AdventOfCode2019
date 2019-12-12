@@ -126,9 +126,9 @@ object IntCode {
     }
     
     def getStateFor(mem: Seq[Int], head: PC = 0, in: LazyList[Int] = LazyList()) =
-        State(mem.zipWithIndex.map(_.swap).toMap, head, 0, in, None)
+        State(mem.zipWithIndex.map(_.swap).toMap.withDefaultValue(0), head, 0, in, None)
         
-    val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, Halt)
+    val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, RBase, Halt)
     val opcodeMap = supportedInstr.map((i: Instruction) => (i.op, i)).toMap//.withDefault(throw new IllegalArgumentException("Unknown opcode"))
 }
 
