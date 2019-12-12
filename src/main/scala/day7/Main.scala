@@ -11,25 +11,27 @@ object Main extends App {
     
     // Part 1
     val part1 = (0 to 4).permutations.map(_.foldLeft(0)(
-        (acc, phase) => IntCode.runUntilHalt(IntCode.getStateFor(memory, in=List(phase, acc))).out.head)
+        (acc, phase) => IntCode.run(IntCode.getStateFor(memory, in=LazyList(phase, acc))).head)
     ).max
     
     println(part1)
 
     // Part 2
-    val permutations = (5 to 9).permutations.map(_.map(phase => IntCode.getStateFor(memory, in=List(phase))).toList)
+    /*
+    Using lazy lists in such a clever way does not come from me, but
+    https://github.com/sim642/adventofcode/blob/master/src/main/scala/eu/sim642/adventofcode2019/Day7.scala,
+    which apparently is also inspired from somebody else.
+     */
+    val settings: List[List[State]] = (5 to 9).permutations.map(_.map(phase => IntCode.getStateFor(memory, in=LazyList(phase))).toList).toList
+    
+    def getSignalFinalValueFor(setting: List[State]) = {
+        def propagatedSignal: LazyList[Int] = setting.foldLeft(0 #:: propagatedSignal)(
+            (input, initState) => IntCode.run(initState.copy(in=initState.in.head #:: input)))
 
-    def propagateSignal(states: List[State], signal: Int, i: Int): Int = states(i) match {
-        case State(_, -1, _, _) => signal
-        case State(mem, head, in, out) => {
-            println(f"Running computer $i")
-            val newState = IntCode.runUntilOutput(State(mem, head, if (in.isEmpty) List(signal) else List(in.head, signal), List()))
-            val newSignal = if (newState.out.isDefinedAt(0)) newState.out.head else signal
-            propagateSignal(states.updated(i, newState), newSignal, (i+1)%5)
-        }
+        propagatedSignal.last
     }
 
-    val part2 = permutations.map(propagateSignal(_, 0, 0)).max
-
+    val part2 = settings.map(getSignalFinalValueFor(_)).max
     println(part2)
+
 }

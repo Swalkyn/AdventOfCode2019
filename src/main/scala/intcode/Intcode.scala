@@ -11,12 +11,11 @@ Possible improvements
 */
 
 object IntCode {
-    type Memory = List[Int]
+    type Memory = Map[Int, Int]
     type PC = Int
-    type IO = List[Int]
 
     case class Parameter(value: Int, access: Int)
-    case class State(mem: Memory, head: PC, rel: PC, in: IO, out: IO)
+    case class State(mem: Memory, head: PC, rel: PC, in: LazyList[Int], out: Option[Int])
 
     sealed trait Instruction {
         val op: Int
@@ -35,8 +34,8 @@ object IntCode {
         def exec(p: List[Parameter])(s: State): Memory = s.mem
         def moveHead(p: List[Parameter])(s:State): PC = s.head + nParams + 1
         def moveRBase(p: List[Parameter])(s: State): PC = s.rel
-        def input(p: List[Parameter])(s: State): IO = s.in
-        def output(p: List[Parameter])(s: State): IO = s.out
+        def input(p: List[Parameter])(s: State): LazyList[Int] = s.in
+        def output(p: List[Parameter])(s: State): Option[Int] = None
     }
     case object Addition extends Instruction { 
         val op = 1
@@ -55,14 +54,14 @@ object IntCode {
         val nParams = 1
         override def exec(p: List[Parameter])(s: State) =
             s.mem.updated(p.head.value, s.in.applyOrElse(0, (i: Int) => { println("Input needed:"); StdIn.readInt() }))
-        override def input(p: List[Parameter])(s: State): IO =
+        override def input(p: List[Parameter])(s: State): LazyList[Int] =
             if (s.in.isEmpty) s.in else s.in.tail
     }
     case object Output extends Instruction {
         val op = 4
         val nParams = 1
         override def output(p: List[Parameter])(s: State) =
-            valByAccess(s, p.head) :: s.out
+            Some(valByAccess(s, p.head))
     }
     case object JumpIfTrue extends Instruction { 
         val op = 5
@@ -107,37 +106,27 @@ object IntCode {
     def getDigitAt(n: Int, pos: Int): Int = 
         (n / Math.pow(10, pos).toInt) % 10
     
-    def decode(memoryAtHead: Memory): State => Option[State] = {
-        val opcode = memoryAtHead.head
+    def exec(s: State): Option[State] = {
+        val opcode = s.mem(s.head)
         val instr = opcodeMap(opcode % 100)
-        val values = memoryAtHead.tail.take(instr.nParams)
+        val values = (1 to instr.nParams).map(n => s.mem(s.head + n))
         val accesses = (0 until instr.nParams).map(n => getDigitAt(opcode, n + 2)).toList
-        val params = (values zip accesses).map(p => Parameter(p._1, p._2))
+        val params = (values zip accesses).map(p => Parameter(p._1, p._2)).toList
         
-        // println(f"Instruction: ${instr}, params: ${params}")
+        //println(f"Instruction: ${instr}, params: ${params}")
         
-        instr(params)
+        instr(params)(s)
     }
 
-    def run(initialState: State) = {
-        def cycle: Option[State] => Option[State] = 
-            _.flatMap(s => decode(s.mem.drop(s.head))(s))
-        
-        LazyList.iterate[Option[State]](Some(initialState))(cycle).takeWhile(_ != None).flatten
-    }
+    def run(initialState: State): LazyList[Int] = {
+        def cycle: State => Option[(Option[Int], State)] = 
+            exec(_).flatMap(s => Some((s.out, s)))
 
-    def runUntilHalt(s: State): State =
-        run(s).last
-    
-    def runUntilOutput(s: State): State =
-        run(s).takeWhile(_.out.isEmpty).last
-    
-    def runNumber(s: State, n: Int) = {
-        run(s).take(n).last
+        LazyList.unfold(initialState)(cycle).flatten
     }
     
-    def getStateFor(mem: Memory, head: PC = 0, in: IO = List()) =
-        State(mem, head, 0, in, List())
+    def getStateFor(mem: Seq[Int], head: PC = 0, in: LazyList[Int] = LazyList()) =
+        State(mem.zipWithIndex.map(_.swap).toMap, head, 0, in, None)
         
     val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, Halt)
     val opcodeMap = supportedInstr.map((i: Instruction) => (i.op, i)).toMap//.withDefault(throw new IllegalArgumentException("Unknown opcode"))
@@ -153,6 +142,7 @@ object Main extends App {
     val testmemory = List(
         3,9,8,9,10,9,4,9,99,-1,8
         )
-    lazy val result = IntCode.runUntilHalt(IntCode.getStateFor(memory, in=List(5)))//foreach(s => println(s.mem))
-    println(result)
+    val initState = IntCode.getStateFor(memory, in=LazyList(5))
+    lazy val result = IntCode.run(initState)//foreach(s => println(s.mem))
+    result.foreach(println)
 }
