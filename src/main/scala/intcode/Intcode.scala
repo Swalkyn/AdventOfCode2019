@@ -138,7 +138,7 @@ object IntCode {
     }
     
     def parseString(input: String): List[Long] =
-        input.stripTrailing().split(',').toList.map(_.toLong)
+        input.stripLineEnd.split(',').toList.map(_.toLong)
         
     val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, RBase, Halt)
     val opcodeMap = supportedInstr.map((i: Instruction) => (i.op, i)).toMap
