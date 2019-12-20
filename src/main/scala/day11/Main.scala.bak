@@ -1,0 +1,76 @@
+package day11
+
+import scala.io.Source
+import intcode.IntCode
+
+object Main extends App {
+    
+    case class Panel(x: Int, y: Int) {
+        def move(d: Direction) = d match {
+            case Down => Panel(x, y-1)
+            case Left => Panel(x-1, y)
+            case Right => Panel(x+1, y)
+            case Up => Panel(x, y+1)
+        }
+    }
+    
+    sealed trait Direction {
+        def turnLeft: Direction
+        def turnRight: Direction
+    }
+    case object Up extends Direction {
+        def turnLeft: Direction = Left
+        def turnRight: Direction = Right
+    }
+    case object Down extends Direction {
+        def turnLeft: Direction = Right
+        def turnRight: Direction = Left
+    }
+    case object Right extends Direction {
+        def turnLeft: Direction = Up
+        def turnRight: Direction = Down
+    }
+    case object Left extends Direction {
+        def turnLeft: Direction = Down
+        def turnRight: Direction = Up
+    }
+    
+    case class OrientedPosition(panel: Panel, dir: Direction) {
+        def turnAndMove(turn: Int): OrientedPosition =
+            if (turn == 0) OrientedPosition(panel.move(dir.turnLeft), dir.turnLeft)
+            else if (turn == 1) OrientedPosition(panel.move(dir.turnRight), dir.turnRight)
+            else throw new IllegalArgumentException
+    }
+    
+
+	val input = Source.fromFile("src/main/resources/day11/input.txt").mkString
+    
+    val robotMemory = IntCode.parseString(input)
+    val panelInfo: Map[Panel, (Long, Boolean)] = Map.empty.withDefaultValue((0, false))
+    val initialPos = OrientedPosition(Panel(0, 0), Up)
+
+
+    def robotOutput: LazyList[Int] = IntCode.runWith(robotMemory, in=cameraOutput).map(_.toInt)
+
+    def paintProcedure(ps: Map[Panel, (Long, Boolean)], robotOutput: LazyList[Int], pos: OrientedPosition): LazyList[(Long, Map[Panel, (Long, Boolean)])] =
+        if (!robotOutput.isEmpty)
+            (ps(pos.panel)._1, ps) #:: paintProcedure(ps.updated(pos.panel, (robotOutput(0), true)), robotOutput.drop(2), pos.turnAndMove(robotOutput(1)))
+        else LazyList((ps(pos.panel)._1, ps))
+
+    lazy val paint: LazyList[(Long, Map[Panel, (Long, Boolean)])] = (0.toLong, panelInfo) #:: (0.toLong, panelInfo) #:: paintProcedure(panelInfo, robotOutput, initialPos)
+    lazy val cameraOutput: LazyList[Long] = paint.map(_._1)
+    lazy val paintedPanels: LazyList[Map[Panel, (Long, Boolean)]] = paint.map(_._2)
+
+	val part1 = paintedPanels.toList.last
+    //IntCode.runWith(robotMemory).foreach(println)
+
+    def printHull(paintedPanels: Map[Panel, (Long, Boolean)], xBound: Int, yBound: Int): Unit =
+        (for {
+            y <- (-yBound to yBound)
+        } yield (for {
+            x <- (-xBound to xBound)
+        } yield if (paintedPanels(Panel(x, y))._1 == 0) '.' else '#').mkString).foreach(println)
+
+    printHull(part1, 50, 80)
+
+}
