@@ -2,6 +2,7 @@ package intcode
 
 import scala.io.Source
 import scala.io.StdIn
+import scala.annotation.tailrec
 
 /*
 Possible improvements
@@ -131,14 +132,24 @@ object IntCode {
 
         LazyList.unfold(initialState)(cycle).flatten
     }
-    
-    def runWith(mem: Seq[Long], in: LazyList[Long] = LazyList()): LazyList[Long] = {
-        val memory: Map[Long, Long] = mem.zipWithIndex.map(x => (x._2.toLong, x._1)).toMap.withDefaultValue(0)
-        run(State(memory, 0, 0, in, None))
+
+    def runWith(mem: Map[Long, Long], in: LazyList[Long] = LazyList()): LazyList[Long] =
+        run(State(mem, 0, 0, in, None))
+
+    def step(s: State): State = {
+        def cycle: State => Option[(Option[State], State)] =
+            exec(_).flatMap(s => Some((s.out.flatMap(out => Some(s)), s)))
+
+        LazyList.unfold(s)(cycle).flatten.head
     }
     
-    def parseString(input: String): List[Long] =
-        input.stripLineEnd.split(',').toList.map(_.toLong)
+    def parseString(input: String): Map[Long, Long] =
+        input
+            .stripLineEnd.split(',')
+            .toList.map(_.toLong)
+            .zipWithIndex
+            .map(x => (x._2.toLong, x._1))
+            .toMap.withDefaultValue(0)
         
     val supportedInstr: List[Instruction] = List(Addition, Multiplication, Input, Output, JumpIfTrue, JumpIfFalse, LessThan, Equals, RBase, Halt)
     val opcodeMap = supportedInstr.map((i: Instruction) => (i.op, i)).toMap
